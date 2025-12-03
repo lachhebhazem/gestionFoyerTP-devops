@@ -26,6 +26,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
+                sh 'chmod +x mvnw'
                 sh "docker build -t ${env.DOCKER_IMAGE} ."
             }
         }
