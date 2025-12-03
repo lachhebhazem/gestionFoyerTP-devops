@@ -20,13 +20,13 @@ pipeline {
 
         stage('Clean & Build') {
             steps {
+                sh 'chmod +x mvnw'
                 sh './mvnw clean package -DskipTests'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'chmod +x mvnw'
                 sh "docker build -t ${env.DOCKER_IMAGE} ."
             }
         }
