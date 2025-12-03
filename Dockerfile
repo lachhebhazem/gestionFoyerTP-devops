@@ -1,12 +1,12 @@
-# Étape 1 : Build
+# Étape 1 : Build du projet
 FROM maven:3.9.3-eclipse-temurin-17 AS build
 WORKDIR /app
-COPY pom.xml .
-COPY src ./src
-RUN mvn clean package -DskipTests
+COPY . .
+RUN ./mvnw clean package -DskipTests
 
-# Étape 2 : Run
-FROM openjdk:17-slim
+# Étape 2 : Créer l'image finale
+FROM eclipse-temurin:17-jdk-focal
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
-ENTRYPOINT ["java","-jar","app.jar"]
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "app.jar"]
