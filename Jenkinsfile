@@ -1,18 +1,13 @@
 pipeline {
     agent any
-
     environment {
         DOCKER_IMAGE = "hazemlachheb/projet-devops"
         K8S_NAMESPACE = "devops"
     }
-
     triggers {
-        // Vérifier le dépôt toutes les minutes
         pollSCM('* * * * *')
     }
-
     stages {
-
         stage('Checkout') {
             steps {
                 checkout scm
@@ -23,7 +18,10 @@ pipeline {
         stage('Clean & Build') {
             steps {
                 sh 'chmod +x mvnw'
-                sh './mvnw clean package -DskipTests'
+                // On télécharge les dépendances AVANT le docker build
+                sh './mvnw dependency:go-offline -B'
+                // On compile ensuite en mode offline
+                sh './mvnw clean package -DskipTests -o'
             }
         }
 
@@ -49,7 +47,7 @@ pipeline {
             steps {
                 script {
                     sh """
-                        echo '🚀 Déploiement dans Kubernetes…'
+                        echo 'Déploiement dans Kubernetes…'
                         kubectl apply -f k8s/mysql-deployment.yaml -n ${K8S_NAMESPACE}
                         kubectl apply -f k8s/spring-deployment.yaml -n ${K8S_NAMESPACE}
                     """
