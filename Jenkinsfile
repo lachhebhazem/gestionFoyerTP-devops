@@ -7,6 +7,7 @@ pipeline {
     triggers {
         pollSCM('* * * * *')
     }
+
     stages {
         stage('Checkout') {
             steps {
@@ -18,9 +19,7 @@ pipeline {
         stage('Clean & Build') {
             steps {
                 sh 'chmod +x mvnw'
-                // On télécharge les dépendances AVANT le docker build
                 sh './mvnw dependency:go-offline -B'
-                // On compile ensuite en mode offline
                 sh './mvnw clean package -DskipTests -o'
             }
         }
@@ -37,7 +36,7 @@ pipeline {
             steps {
                 script {
                     docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
-                        sh "docker push ${DOCKER_IMAGE}:latest"
+                        docker.image("${DOCKER_IMAGE}:latest").push()
                     }
                 }
             }
@@ -45,32 +44,36 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
-                script {
-                    sh """
-                        echo 'Déploiement dans Kubernetes…'
-                        kubectl apply -f k8s/mysql-deployment.yaml -n ${K8S_NAMESPACE}
-                        kubectl apply -f k8s/spring-deployment.yaml -n ${K8S_NAMESPACE}
-                    """
-                }
+                sh """
+                    echo 'Déploiement dans Kubernetes…'
+                    kubectl apply -f k8s/mysql-deployment.yaml -n ${K8S_NAMESPACE}
+                    kubectl apply -f k8s/mysql-service.yaml -n ${K8S_NAMESPACE}
+                    kubectl apply -f k8s/spring-config.yaml -n ${K8S_NAMESPACE}
+                    kubectl apply -f k8s/spring-deployment.yaml -n ${K8S_NAMESPACE}
+                    kubectl apply -f k8s/spring-service.yaml -n ${K8S_NAMESPACE}
+                """
             }
         }
 
         stage('Verify Deployment') {
             steps {
-                script {
-                    sh "kubectl get pods -n ${K8S_NAMESPACE}"
-                    sh "kubectl get svc -n ${K8S_NAMESPACE}"
-                }
+                sh 'echo "=== PODS ==="'
+                sh "kubectl get pods -n ${K8S_NAMESPACE}"
+                sh 'echo "=== SERVICES ==="'
+                sh "kubectl get svc -n ${K8S_NAMESPACE}"
             }
         }
     }
 
     post {
         success {
-            echo "Pipeline terminé avec succès ! Déploiement Kubernetes OK."
+            echo "Pipeline terminé avec succès ! Ton application est accessible sur http://<IP>:30080"
         }
         failure {
             echo "Pipeline échoué ! Vérifie les logs."
+        }
+        always {
+            cleanWs()
         }
     }
 }
