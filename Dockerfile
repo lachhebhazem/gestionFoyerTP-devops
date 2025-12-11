@@ -1,12 +1,10 @@
-# Étape 1 : Build du projet
-FROM maven:3.9.3-eclipse-temurin-17 AS build
-WORKDIR /app
-COPY . .
-RUN mvn clean package -DskipTests
+# Plus de Maven dans Docker → tout est déjà fait par Jenkins avant
+FROM eclipse-temurin:17-jre-focal
 
-# Étape 2 : Créer l’image finale
-FROM eclipse-temurin:17-jdk-focal
 WORKDIR /app
-COPY --from=build /app/target/*.jar app.jar
+
+# Le JAR existe déjà grâce à la commande mvnw dans Jenkins
+COPY target/*.jar app.jar
+
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "/app.jar"]
