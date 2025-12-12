@@ -50,7 +50,7 @@ pipeline {
             steps {
                 script {
                     sh """
-                        kubectl set image deployment/spring-app spring-app=${DOCKER_IMAGE}:latest -n devops
+                        kubectl set image deployment/spring-app spring=${DOCKER_IMAGE}:latest -n devops
                         kubectl rollout restart deployment/spring-app -n devops
                         kubectl rollout status deployment/spring-app -n devops
                     """
