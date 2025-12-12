@@ -1,14 +1,17 @@
 pipeline {
     agent any
+
     environment {
         DOCKER_IMAGE = "hazemlachheb/projet-devops"
-        K8S_NAMESPACE = "devops"
+        DOCKER_REGISTRY = "https://index.docker.io/v1/"
     }
+
     triggers {
         pollSCM('* * * * *')
     }
 
     stages {
+
         stage('Checkout') {
             steps {
                 checkout scm
@@ -16,18 +19,19 @@ pipeline {
             }
         }
 
-        stage('Clean & Build') {
+        stage('Build Project') {
             steps {
                 sh 'chmod +x mvnw'
-                sh './mvnw dependency:go-offline -B'
-                sh './mvnw clean package -DskipTests -o'
+                sh './mvnw clean package -DskipTests'
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    docker.build("${DOCKER_IMAGE}:latest")
+                    sh """
+                        docker build -t ${DOCKER_IMAGE}:latest .
+                    """
                 }
             }
         }
@@ -35,8 +39,8 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials') {
-                        docker.image("${DOCKER_IMAGE}:latest").push()
+                    docker.withRegistry(DOCKER_REGISTRY, 'dockerhub-credentials') {
+                        sh "docker push ${DOCKER_IMAGE}:latest"
                     }
                 }
             }
@@ -44,36 +48,23 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
-                sh """
-                    echo 'Déploiement dans Kubernetes…'
-                    kubectl apply -f k8s/mysql-deployment.yaml -n ${K8S_NAMESPACE}
-                    kubectl apply -f k8s/mysql-service.yaml -n ${K8S_NAMESPACE}
-                    kubectl apply -f k8s/spring-config.yaml -n ${K8S_NAMESPACE}
-                    kubectl apply -f k8s/spring-deployment.yaml -n ${K8S_NAMESPACE}
-                    kubectl apply -f k8s/spring-service.yaml -n ${K8S_NAMESPACE}
-                """
-            }
-        }
-
-        stage('Verify Deployment') {
-            steps {
-                sh 'echo "=== PODS ==="'
-                sh "kubectl get pods -n ${K8S_NAMESPACE}"
-                sh 'echo "=== SERVICES ==="'
-                sh "kubectl get svc -n ${K8S_NAMESPACE}"
+                script {
+                    sh """
+                        kubectl set image deployment/spring-app spring-app=${DOCKER_IMAGE}:latest -n devops
+                        kubectl rollout restart deployment/spring-app -n devops
+                        kubectl rollout status deployment/spring-app -n devops
+                    """
+                }
             }
         }
     }
 
     post {
         success {
-            echo "Pipeline terminé avec succès ! Ton application est accessible sur http://<IP>:30080"
+            echo "Pipeline terminé avec succès ! Image Docker pushée."
         }
         failure {
-            echo "Pipeline échoué ! Vérifie les logs."
-        }
-        always {
-            cleanWs()
+            echo "Pipeline échoué ! Vérifie les logs et les credentials Docker."
         }
     }
 }
