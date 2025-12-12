@@ -6,5 +6,5 @@ WORKDIR /app
 # Le JAR existe déjà grâce à la commande mvnw dans Jenkins
 COPY target/*.jar app.jar
 
-EXPOSE 8080
+EXPOSE 8081
 ENTRYPOINT ["java", "-jar", "/app.jar"]
