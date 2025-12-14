@@ -22,15 +22,13 @@ pipeline {
             }
         }
         stage('SonarQube Analysis') {
-            steps {
-                sh """
-                ./mvnw clean verify sonar:sonar \\
-                  -Dsonar.projectKey=test-devops \\
-                  -Dsonar.host.url=http://192.168.72.129:9000 \\
-                  -Dsonar.login=\${SONAR_TOKEN}
-                """
-            }
+    steps {
+        withSonarQubeEnv('SonarQubeServer') {  // nom du serveur que tu as configuré
+            sh './mvnw clean verify sonar:sonar -Dsonar.projectKey=gestionfoyerTP'
         }
+    }
+}
+
         stage('Quality Gate') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {  // Increased timeout – Sonar can take time
