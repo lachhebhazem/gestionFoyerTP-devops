@@ -27,42 +27,39 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-    steps {
-        withCredentials([string(credentialsId: 'SONAR_AUTH_TOKEN', variable: 'SONAR_AUTH_TOKEN')]) {
-            withSonarQubeEnv('SonarQube') {
-                sh './mvnw sonar:sonar -Dsonar.login=$SONAR_AUTH_TOKEN'
+            steps {
+                withCredentials([string(credentialsId: 'SONAR_AUTH_TOKEN', variable: 'SONAR_TOKEN')]) {
+                    withSonarQubeEnv('SonarQube') {
+                        sh '''
+                        ./mvnw sonar:sonar \
+                        -Dsonar.login=$SONAR_TOKEN
+                        '''
+                    }
+                }
             }
         }
-    }
-}
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    sh "docker build -t ${DOCKER_IMAGE}:latest ."
-                }
+                sh "docker build -t ${DOCKER_IMAGE}:latest ."
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                script {
-                    docker.withRegistry(DOCKER_REGISTRY, 'dockerhub-credentials') {
-                        sh "docker push ${DOCKER_IMAGE}:latest"
-                    }
+                docker.withRegistry(DOCKER_REGISTRY, 'dockerhub-credentials') {
+                    sh "docker push ${DOCKER_IMAGE}:latest"
                 }
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
-                script {
-                    sh """
-                        kubectl set image deployment/spring-app spring=${DOCKER_IMAGE}:latest -n devops
-                        kubectl rollout restart deployment/spring-app -n devops
-                        kubectl rollout status deployment/spring-app -n devops
-                    """
-                }
+                sh '''
+                kubectl set image deployment/spring-app spring='${DOCKER_IMAGE}:latest' -n devops
+                kubectl rollout restart deployment/spring-app -n devops
+                kubectl rollout status deployment/spring-app -n devops
+                '''
             }
         }
     }
