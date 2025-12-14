@@ -2,11 +2,11 @@ pipeline {
     agent any
     environment {
         DOCKER_IMAGE = "hazemlachheb/projet-devops"
-        SONAR_TOKEN = credentials('sonar-token')
+        SONAR_TOKEN = credentials('sonar-token')  // Already masked and available as env var
         DOCKER_REGISTRY = "https://index.docker.io/v1/"
     }
     triggers {
-        pollSCM('* * * * *')  // Polls every minute
+        pollSCM('* * * * *') // Every minute
     }
     stages {
         stage('Checkout') {
@@ -18,22 +18,22 @@ pipeline {
         stage('Build Project') {
             steps {
                 sh 'chmod +x mvnw'
-                sh './mvnw clean package -DskipTests'
+                sh './mvnw clean verify -Dmaven.test.skip=true'  // Fully skip tests
             }
         }
-              stage('SonarQube Analysis') {
+        stage('SonarQube Analysis') {
             steps {
                 sh """
-                ./mvnw clean verify sonar:sonar \
-                -Dsonar.projectKey=test-devops \
-                -Dsonar.host.url=http://http://192.168.72.129:9000 \
-                -Dsonar.login=${SONAR_TOKEN}
+                ./mvnw clean verify sonar:sonar \\
+                  -Dsonar.projectKey=test-devops \\
+                  -Dsonar.host.url=http://192.168.72.129:9000 \\
+                  -Dsonar.login=\${SONAR_TOKEN}
                 """
             }
         }
         stage('Quality Gate') {
             steps {
-                timeout(time: 2, unit: 'MINUTES') {
+                timeout(time: 5, unit: 'MINUTES') {  // Increased timeout – Sonar can take time
                     waitForQualityGate abortPipeline: true
                 }
             }
@@ -46,7 +46,6 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 script {
-                    // This is the key fix: wrap docker.withRegistry in a script block
                     docker.withRegistry(DOCKER_REGISTRY, 'dockerhub-credentials') {
                         sh "docker push ${DOCKER_IMAGE}:latest"
                     }
@@ -58,7 +57,7 @@ pipeline {
                 sh '''
                 kubectl set image deployment/spring-app spring=${DOCKER_IMAGE}:latest -n devops
                 kubectl rollout restart deployment/spring-app -n devops
-                kubectl rollout status deployment/spring-app -n devops
+                kubectl rollout status deployment/spring-app -n devops --timeout=5m
                 '''
             }
         }
