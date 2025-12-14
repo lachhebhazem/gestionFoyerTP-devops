@@ -77,6 +77,11 @@
                 </configuration>
             </plugin>
             <plugin>
+            <groupId>org.sonarsource.scanner.maven</groupId>
+            <artifactId>sonar-maven-plugin</artifactId>
+            <version>4.4.2.5174</version> <!-- Utilise la dernière version stable -->
+        </plugin>
+            <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
