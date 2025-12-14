@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "hazemlachheb/projet-devops"
+        DOCKER_IMAGE    = "hazemlachheb/projet-devops"
         DOCKER_REGISTRY = "https://index.docker.io/v1/"
     }
 
@@ -39,6 +39,14 @@ pipeline {
             }
         }
 
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 2, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 sh "docker build -t ${DOCKER_IMAGE}:latest ."
@@ -69,7 +77,7 @@ pipeline {
             echo "Pipeline terminé avec succès !"
         }
         failure {
-            echo "Pipeline échoué ! Vérifie Jenkins / Sonar / Docker."
+            echo "Pipeline échoué ! Vérifie Jenkins / Sonar / Docker / Kubernetes."
         }
     }
 }
