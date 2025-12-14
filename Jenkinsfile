@@ -2,8 +2,7 @@ pipeline {
     agent any
     environment {
         DOCKER_IMAGE = "hazemlachheb/projet-devops"
-        // DOCKER_REGISTRY is not strictly needed if pushing to Docker Hub
-        // But kept for clarity
+        
         DOCKER_REGISTRY = "https://index.docker.io/v1/"
     }
     triggers {
