@@ -26,12 +26,21 @@ pipeline {
             }
         }
 
+        stage('SonarQube Analysis') {
+            environment {
+                SONAR_AUTH_TOKEN = credentials('sonar-token')
+            }
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh './mvnw sonar:sonar'
+                }
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh """
-                        docker build -t ${DOCKER_IMAGE}:latest .
-                    """
+                    sh "docker build -t ${DOCKER_IMAGE}:latest ."
                 }
             }
         }
@@ -61,10 +70,10 @@ pipeline {
 
     post {
         success {
-            echo "Pipeline terminé avec succès ! Image Docker pushée."
+            echo "Pipeline terminé avec succès !"
         }
         failure {
-            echo "Pipeline échoué ! Vérifie les logs et les credentials Docker."
+            echo "Pipeline échoué ! Vérifie Jenkins / Sonar / Docker."
         }
     }
 }
