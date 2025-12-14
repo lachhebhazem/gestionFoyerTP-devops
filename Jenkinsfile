@@ -2,7 +2,7 @@ pipeline {
     agent any
     environment {
         DOCKER_IMAGE = "hazemlachheb/projet-devops"
-        
+        SONAR_TOKEN = credentials('sonar-token')
         DOCKER_REGISTRY = "https://index.docker.io/v1/"
     }
     triggers {
@@ -21,16 +21,14 @@ pipeline {
                 sh './mvnw clean package -DskipTests'
             }
         }
-        stage('SonarQube Analysis') {
+              stage('SonarQube Analysis') {
             steps {
-                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
-                    withSonarQubeEnv('SonarQube') {
-                        sh '''
-                        ./mvnw sonar:sonar \
-                          -Dsonar.login=$SONAR_TOKEN
-                        '''
-                    }
-                }
+                sh """
+                ./mvnw clean verify sonar:sonar \
+                -Dsonar.projectKey=test-devops \
+                -Dsonar.host.url=http://http://192.168.72.129:9000 \
+                -Dsonar.login=${SONAR_TOKEN}
+                """
             }
         }
         stage('Quality Gate') {
