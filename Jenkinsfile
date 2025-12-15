@@ -2,7 +2,7 @@ pipeline {
     agent any
     environment {
         DOCKER_IMAGE = "hazemlachheb/projet-devops"
-        SONAR_TOKEN = credentials('sonar-token')  // Already masked and available as env var
+        SONAR_TOKEN = credentials('sonar-token')  
         DOCKER_REGISTRY = "https://index.docker.io/v1/"
     }
     triggers {
