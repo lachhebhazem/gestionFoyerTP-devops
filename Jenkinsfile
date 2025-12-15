@@ -32,17 +32,18 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-            steps {
-                withSonarQubeEnv('SonarQubeServer') {
-                    sh '''
-                    ./mvnw verify sonar:sonar \
-                    -DskipTests \
-                    -Dspring.autoconfigure.exclude=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration \
-                    -Dsonar.projectKey=gestionfoyerTP
-                    '''
-                }
-            }
+    steps {
+        withSonarQubeEnv('SonarQubeServer') {
+            sh '''
+            ./mvnw sonar:sonar \
+            -DskipTests \
+            -Dspring.autoconfigure.exclude=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration \
+            -Dsonar.projectKey=gestionfoyerTP
+            '''
         }
+    }
+}
+
 
         stage('Quality Gate') {
             steps {
