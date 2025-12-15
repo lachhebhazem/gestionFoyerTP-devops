@@ -22,7 +22,6 @@ public class Foyer {
     private long capaciteFoyer;
 
     @OneToOne(mappedBy = "foyer")
-
     @JsonIgnoreProperties("foyer")
     private Universite universite;
 
