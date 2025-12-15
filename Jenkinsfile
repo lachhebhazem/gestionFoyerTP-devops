@@ -1,46 +1,63 @@
 pipeline {
     agent any
+
     environment {
         DOCKER_IMAGE = "hazemlachheb/projet-devops"
-        SONAR_TOKEN = credentials('sonar-token')  
+        SONAR_TOKEN = credentials('sonar-token')
         DOCKER_REGISTRY = "https://index.docker.io/v1/"
     }
+
     triggers {
-        pollSCM('* * * * *') // Every minute
+        pollSCM('* * * * *')   // toutes les 5 minutes (meilleure pratique)
     }
+
     stages {
+
         stage('Checkout') {
             steps {
                 checkout scm
                 sh 'git clean -fdx'
             }
         }
+
         stage('Build Project') {
             steps {
                 sh 'chmod +x mvnw'
-                sh './mvnw clean verify -Dmaven.test.skip=true'  // Fully skip tests
+                sh '''
+                ./mvnw clean verify \
+                -DskipTests \
+                -Dspring.autoconfigure.exclude=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+                '''
             }
         }
+
         stage('SonarQube Analysis') {
-    steps {
-        withSonarQubeEnv('SonarQubeServer') {  // nom du serveur que tu as configuré
-            sh './mvnw clean verify sonar:sonar -Dsonar.projectKey=gestionfoyerTP'
+            steps {
+                withSonarQubeEnv('SonarQubeServer') {
+                    sh '''
+                    ./mvnw verify sonar:sonar \
+                    -DskipTests \
+                    -Dspring.autoconfigure.exclude=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration \
+                    -Dsonar.projectKey=gestionfoyerTP
+                    '''
+                }
+            }
         }
-    }
-}
 
         stage('Quality Gate') {
             steps {
-                timeout(time: 5, unit: 'MINUTES') {  // Increased timeout – Sonar can take time
+                timeout(time: 5, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
         }
+
         stage('Build Docker Image') {
             steps {
                 sh "docker build -t ${DOCKER_IMAGE}:latest ."
             }
         }
+
         stage('Push Docker Image') {
             steps {
                 script {
@@ -50,6 +67,7 @@ pipeline {
                 }
             }
         }
+
         stage('Deploy to Kubernetes') {
             steps {
                 sh '''
@@ -60,12 +78,13 @@ pipeline {
             }
         }
     }
+
     post {
         success {
-            echo "Pipeline terminé avec succès !"
+            echo "✅ Pipeline terminé avec succès !"
         }
         failure {
-            echo "Pipeline échoué ! Vérifie Jenkins / Sonar / Docker / Kubernetes."
+            echo "❌ Pipeline échoué ! Vérifie Jenkins / Sonar / Docker / Kubernetes."
         }
     }
 }
