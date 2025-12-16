@@ -2,16 +2,17 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE   = "hazemlachheb/projet-devops"
-        SONAR_TOKEN    = credentials('sonar-jenkins-token')
+        DOCKER_IMAGE    = "hazemlachheb/projet-devops"
+        SONAR_TOKEN     = credentials('sonar-test')   // ID du token Jenkins pour SonarQube
         DOCKER_REGISTRY = "https://index.docker.io/v1/"
     }
 
     triggers {
-        pollSCM('* * * * *')
+        pollSCM('* * * * *') // vérifie les changements toutes les minutes
     }
 
     stages {
+
         stage('Checkout') {
             steps {
                 checkout scm
@@ -37,7 +38,11 @@ pipeline {
                         ./mvnw sonar:sonar \
                             -DskipTests \
                             -Dspring.profiles.active=h2 \
-                            -Dsonar.projectKey=gestionfoyerTP
+                            -Dsonar.projectKey=sonar-test \
+                            -Dsonar.projectName=sonar-test \
+                            -Dsonar.host.url=http://192.168.1.170:9000 \
+                            -Dsonar.login=${SONAR_TOKEN} \
+                            -Dsonar.ws.timeout=120
                     '''
                 }
             }
@@ -45,7 +50,7 @@ pipeline {
 
         stage('Quality Gate') {
             steps {
-                timeout(time: 5, unit: 'MINUTES') {
+                timeout(time: 10, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
@@ -76,6 +81,7 @@ pipeline {
                 '''
             }
         }
+
     }
 
     post {
@@ -83,7 +89,7 @@ pipeline {
             echo "Pipeline terminé avec succès !"
         }
         failure {
-            echo "Pipeline échoué ! Vérifie Jenkins / Sonar / Docker // Kubernetes."
+            echo "Pipeline échoué ! Vérifie Jenkins / Sonar / Docker / Kubernetes."
         }
     }
 }
