@@ -83,7 +83,7 @@ pipeline {
             echo "Pipeline terminé avec succès !"
         }
         failure {
-            echo "Pipeline échoué ! Vérifie Jenkins / Sonar / Docker / Kubernetes."
+            echo "Pipeline échoué ! Vérifie Jenkins / Sonar / Docker // Kubernetes."
         }
     }
 }
