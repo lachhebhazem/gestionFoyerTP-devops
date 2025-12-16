@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         DOCKER_IMAGE   = "hazemlachheb/projet-devops"
-        SONAR_TOKEN    = credentials('sonar-token')
+        SONAR_TOKEN    = credentials('sonar-jenkins-token')
         DOCKER_REGISTRY = "https://index.docker.io/v1/"
     }
 
